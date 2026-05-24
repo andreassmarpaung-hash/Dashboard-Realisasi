@@ -151,11 +151,8 @@ except Exception as e:
 st.title("Dashboard Realisasi Belanja Kementerian")
 st.markdown("---")
 
-try:
-    # Sidebar filters
-    st.sidebar.header("🔍 Filter Data")
-
-# Prepare filter options
+# Sidebar filters
+st.sidebar.header("🔍 Filter Data")
 tahun_list = sorted(df['TAHUN'].dropna().unique())
 dept_list = sorted(df['NMDEPT'].dropna().unique())
 lokasi_list = sorted(df['NMLOKASI'].dropna().unique())
@@ -984,20 +981,3 @@ with tab6:
     # Footer
     st.markdown("---")
     st.markdown(f"*Dashboard Realisasi Belanja Kementerian | Data terakhir diperbarui: {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}*")
-
-except Exception as e:
-    st.error(f"""
-❌ **Unexpected Error Occurred!**
-
-**Error Details:**
-```
-{traceback.format_exc()}
-```
-
-**Troubleshooting:**
-1. Check if data file exists: `git ls-files | grep Belanja`
-2. Verify recent commits: `git log --oneline | head -5`
-3. Check Streamlit Cloud logs for more details
-4. Try: `git push -f origin main` to force redeploy
-    """)
-    st.stop()
