@@ -86,7 +86,6 @@ def load_data():
         try:
             if os.path.exists(p):
                 df = pd.read_csv(p, delimiter=';')
-                st.success(f"✅ Data loaded successfully from: {p}")
                 break
         except Exception as e:
             last_error = str(e)
@@ -215,12 +214,12 @@ df_filtered = df[
 
 # Tabs untuk berbagai views
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-    "1️⃣ Realisasi vs Pagu per Tahun",
-    "2️⃣ Realisasi per Wilayah",
-    "3️⃣ Early Warning",
-    "4️⃣ Realisasi per Kementerian",
-    "5️⃣ Kegiatan Terbanyak",
-    "6️⃣ Budget Prediction"
+    "Realisasi vs Pagu per Tahun",
+    "Realisasi per Wilayah",
+    "Early Warning",
+    "Realisasi per Kementerian",
+    "Kegiatan Terbanyak",
+    "Budget Prediction"
 ])
 
 # ==================== TAB 1: REALISASI VS PAGU PER TAHUN ====================
