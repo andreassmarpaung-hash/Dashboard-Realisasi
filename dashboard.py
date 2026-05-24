@@ -7,6 +7,8 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
 import os
+import sys
+import traceback
 
 # Set page config
 st.set_page_config(
@@ -67,57 +69,91 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# Load data
+# Load data with robust error handling
 @st.cache_data
 def load_data():
-    # Try several locations for the CSV so the app works locally and on Streamlit Cloud
+    """Load CSV dengan fallback paths dan error handling lengkap."""
     possible_paths = [
         os.path.join(os.path.dirname(__file__), 'Belanja_Full_Baru.csv'),
         'Belanja_Full_Baru.csv',
         '/Users/djpb/Documents/Dashboard Realisasi/Belanja_Full_Baru.csv'
     ]
+    
     df = None
-    errors = []
+    last_error = None
+    
     for p in possible_paths:
         try:
-            if p and os.path.exists(p):
+            if os.path.exists(p):
                 df = pd.read_csv(p, delimiter=';')
+                st.success(f"✅ Data loaded successfully from: {p}")
                 break
         except Exception as e:
-            errors.append(f"{p}: {str(e)}")
+            last_error = str(e)
             continue
+    
     if df is None:
-        error_msg = "\n".join(errors) if errors else "No paths checked"
-        st.error(f"❌ File 'Belanja_Full_Baru.csv' not found.\n\nDiagnostic Info:\n{error_msg}\n\nCurrent working directory: {os.getcwd()}\n\nFiles in directory: {os.listdir('.')}")
+        error_text = f"""
+❌ **CRITICAL ERROR: Data file not found!**
+
+**Tried paths:**
+"""
+        for p in possible_paths:
+            exists = "✓" if os.path.exists(p) else "✗"
+            error_text += f"\n{exists} {p}"
+        
+        error_text += f"""
+
+**Current directory:** {os.getcwd()}
+**Files in directory:** {', '.join(os.listdir('.')[:10])}
+**Last error:** {last_error}
+
+**Solution:**
+1. Ensure 'Belanja_Full_Baru.csv' exists in the repository root
+2. Run: `git add Belanja_Full_Baru.csv && git commit -m "Add data" && git push`
+3. Check Streamlit Cloud logs for more details
+        """
+        st.error(error_text)
         st.stop()
     
-    # Bersihkan data - ganti notasi ilmiah dengan angka normal
-    for col in ['PAGU_DIPA', 'REALISASI', 'BLOKIR']:
-        df[col] = pd.to_numeric(df[col], errors='coerce')
-    
-    # Hapus baris dengan nilai NaN di kolom penting
-    df = df.dropna(subset=['NMDEPT', 'NMLOKASI', 'TAHUN'])
-    
-    # Convert kolom string ke string dan hapus whitespace
-    df['NMDEPT'] = df['NMDEPT'].astype(str).str.strip()
-    df['NMLOKASI'] = df['NMLOKASI'].astype(str).str.strip()
-    df['TAHUN'] = df['TAHUN'].astype(int)
-    
-    # Hitung persentase realisasi dan selisih
-    df['PERSEN_REALISASI'] = (df['REALISASI'] / df['PAGU_DIPA'] * 100).round(2)
-    df['SELISIH'] = df['REALISASI'] - df['PAGU_DIPA']
-    df['OVER_BUDGET'] = df['SELISIH'] > 0
-    
-    return df
+    try:
+        # Bersihkan data - ganti notasi ilmiah dengan angka normal
+        for col in ['PAGU_DIPA', 'REALISASI', 'BLOKIR']:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+        
+        # Hapus baris dengan nilai NaN di kolom penting
+        df = df.dropna(subset=['NMDEPT', 'NMLOKASI', 'TAHUN'])
+        
+        # Convert kolom string ke string dan hapus whitespace
+        df['NMDEPT'] = df['NMDEPT'].astype(str).str.strip()
+        df['NMLOKASI'] = df['NMLOKASI'].astype(str).str.strip()
+        df['TAHUN'] = df['TAHUN'].astype(int)
+        
+        # Hitung persentase realisasi dan selisih
+        df['PERSEN_REALISASI'] = (df['REALISASI'] / df['PAGU_DIPA'] * 100).round(2)
+        df['SELISIH'] = df['REALISASI'] - df['PAGU_DIPA']
+        df['OVER_BUDGET'] = df['SELISIH'] > 0
+        
+        return df
+    except Exception as e:
+        st.error(f"❌ Error processing data: {str(e)}\n\n{traceback.format_exc()}")
+        st.stop()
 
-df = load_data()
+# Load data safely
+try:
+    df = load_data()
+except Exception as e:
+    st.error(f"❌ Critical error during initialization: {str(e)}\n\n{traceback.format_exc()}")
+    st.stop()
 
 # Title
 st.title("Dashboard Realisasi Belanja Kementerian")
 st.markdown("---")
 
-# Sidebar filters
-st.sidebar.header("🔍 Filter Data")
+try:
+    # Sidebar filters
+    st.sidebar.header("🔍 Filter Data")
 
 # Prepare filter options
 tahun_list = sorted(df['TAHUN'].dropna().unique())
@@ -945,6 +981,23 @@ with tab6:
     
     st.info(f"📌 **Catatan Metodologi**: Prediksi menggunakan model regresi linear yang dilatih berdasarkan data historis. Presisi prediksi bergantung pada konsistensi trend data masa lalu.")
 
-# Footer
-st.markdown("---")
-st.markdown(f"*Dashboard Realisasi Belanja Kementerian | Data terakhir diperbarui: {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}*")
+    # Footer
+    st.markdown("---")
+    st.markdown(f"*Dashboard Realisasi Belanja Kementerian | Data terakhir diperbarui: {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}*")
+
+except Exception as e:
+    st.error(f"""
+❌ **Unexpected Error Occurred!**
+
+**Error Details:**
+```
+{traceback.format_exc()}
+```
+
+**Troubleshooting:**
+1. Check if data file exists: `git ls-files | grep Belanja`
+2. Verify recent commits: `git log --oneline | head -5`
+3. Check Streamlit Cloud logs for more details
+4. Try: `git push -f origin main` to force redeploy
+    """)
+    st.stop()
