@@ -1,0 +1,15 @@
+[client]
+showErrorDetails = true
+maxMessageSize = 200
+
+[logger]
+level = "info"
+
+[server]
+maxUploadSize = 200
+enableXsrfProtection = true
+enableCORS = false
+
+[cache]
+maxEntries = 1000
+ttl = 3600
