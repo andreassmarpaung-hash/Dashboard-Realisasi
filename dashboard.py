@@ -77,15 +77,19 @@ def load_data():
         '/Users/djpb/Documents/Dashboard Realisasi/Belanja_Full_Baru.csv'
     ]
     df = None
+    errors = []
     for p in possible_paths:
         try:
             if p and os.path.exists(p):
                 df = pd.read_csv(p, delimiter=';')
                 break
-        except Exception:
+        except Exception as e:
+            errors.append(f"{p}: {str(e)}")
             continue
     if df is None:
-        raise FileNotFoundError(f"File 'Belanja_Full_Baru.csv' not found. Checked: {possible_paths}")
+        error_msg = "\n".join(errors) if errors else "No paths checked"
+        st.error(f"❌ File 'Belanja_Full_Baru.csv' not found.\n\nDiagnostic Info:\n{error_msg}\n\nCurrent working directory: {os.getcwd()}\n\nFiles in directory: {os.listdir('.')}")
+        st.stop()
     
     # Bersihkan data - ganti notasi ilmiah dengan angka normal
     for col in ['PAGU_DIPA', 'REALISASI', 'BLOKIR']:
